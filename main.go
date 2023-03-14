@@ -61,74 +61,107 @@ func (v *Vector) GetEnd() *Point {
 	return v.end
 }
 
-// vector math
-
-func (v *Vector) GetDirection() *Point {
-	return &Point{
-		x: v.end.x - v.start.x,
-		y: v.end.y - v.start.y,
-		z: v.end.z - v.start.z,
-	}
-}
-
-func (v *Vector) DirectionVector() *Vector {
-	return &Vector{
-		start: v.start,
-		end:   v.GetDirection(),
-	}
-}
+// Returns the magnitude of the vector
 
 func (v *Vector) Length() float64 {
 	return math.Sqrt(math.Pow(v.end.x-v.start.x, 2) + math.Pow(v.end.y-v.start.y, 2) + math.Pow(v.end.z-v.start.z, 2))
 }
 
-func (v *Vector) UnitVector() *Vector {
-	direction := v.GetDirection()
+func (v *Vector) Magnitude() float64 {
+	return v.Length()
+}
+
+// Returns the unit vector in the direction of the vector
+
+func (v *Vector) UnitVector() *Point {
 	length := v.Length()
-	return &Vector{
-		start: v.start,
-		end: &Point{
-			x: v.start.x + direction.x/length,
-			y: v.start.y + direction.y/length,
-			z: v.start.z + direction.z/length,
-		},
+	return &Point{
+		x: (v.end.x - v.start.x) / length,
+		y: (v.end.y - v.start.y) / length,
+		z: (v.end.z - v.start.z) / length,
 	}
 }
 
-func (v *Vector) Angle(v2 *Vector) float64 {
-	return math.Acos(v.DotProduct(v2) / (v.Length() * v2.Length()))
+// Returns the direction vector of the vector from the origin
+
+func (v *Vector) DirectionVectorFromOrigin() *Point {
+	// origin
+	o := NewPoint(0, 0, 0)
+
+	// direction point
+	d := NewPoint(v.end.x-v.start.x, v.end.y-v.start.y, v.end.z-v.start.z)
+
+	// return the direction vector
+	return NewVector(o, d).UnitVector()
 }
 
-func (v *Vector) DotProduct(v2 *Vector) float64 {
-	direction1 := v.GetDirection()
-	direction2 := v2.GetDirection()
-	return float64(direction1.x*direction2.x + direction1.y*direction2.y + direction1.z*direction2.z)
+// Returns the dot product of the vector and another vector named other
+
+func (v *Vector) DotProduct(other *Vector) float64 {
+	// get the unit vectors
+	unit1 := v.UnitVector()
+	unit2 := other.UnitVector()
+
+	// return the dot product
+	return unit1.x*unit2.x + unit1.y*unit2.y + unit1.z*unit2.z
 }
 
-func (v *Vector) CrossProduct(v2 *Vector) *Vector {
-	direction1 := v.UnitVector().GetDirection()
-	direction2 := v2.UnitVector().GetDirection()
+// Returns the angle between the given vector and another vector named other, in radians
 
-	// get the angle between the two vectors
-	angle := v.Angle(v2)
+func (v *Vector) Angle(other *Vector) float64 {
+	return v.AngleRadian(other)
+}
 
-	// get the length of the cross product
-	length := v.Length() * v2.Length() * math.Sin(angle)
+// Returns the angle between the given vector and another vector named other, in radians
 
-	// get the direction of the cross product
-	direction := &Point{
-		x: direction1.y*direction2.z - direction1.z*direction2.y,
-		y: direction1.z*direction2.x - direction1.x*direction2.z,
-		z: direction1.x*direction2.y - direction1.y*direction2.x,
+func (c *Vector) AngleRadian(other *Vector) float64 {
+	return math.Acos(c.DotProduct(other) / (c.Length() * other.Length()))
+}
+
+// Returns the angle between the given vector and another vector named other, in degrees
+
+func (v *Vector) AngleDegree(other *Vector) float64 {
+	return v.AngleRadian(other) * (180 / math.Pi)
+}
+
+// Returns the unit of the cross product of the vector and another vector named other
+
+func (v *Vector) CrossProduct(other *Vector) *Point {
+	// get the unit vectors
+	unit1 := v.UnitVector()
+	unit2 := other.UnitVector()
+
+	// rthe direction point
+	dp := &Point{
+		x: unit1.y*unit2.z - unit1.z*unit2.y,
+		y: unit1.z*unit2.x - unit1.x*unit2.z,
+		z: unit1.x*unit2.y - unit1.y*unit2.x,
 	}
 
-	// return the cross product
-	return &Vector{
-		start: v.start,
-		end: &Point{
-			x: v.start.x + direction.x*length,
-			y: v.start.y + direction.y*length,
-			z: v.start.z + direction.z*length,
-		},
+	// return the direction vector
+	return NewVector(v.start, dp).UnitVector()
+}
+
+// Returns the projection of the vector onto another vector named other
+
+func (v *Vector) Project(other *Vector) *Vector {
+	// get the unit vectors
+	unit1 := v.UnitVector()
+	unit2 := other.UnitVector()
+
+	// get the dot product
+	dot := unit1.x*unit2.x + unit1.y*unit2.y + unit1.z*unit2.z
+
+	// get the length of the vector
+	length := v.Length()
+
+	// get the projection point
+	p := &Point{
+		x: v.start.x + dot*length*unit2.x,
+		y: v.start.y + dot*length*unit2.y,
+		z: v.start.z + dot*length*unit2.z,
 	}
+
+	// return the projection vector
+	return NewVector(v.start, p)
 }
